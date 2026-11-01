@@ -1,0 +1,75 @@
+{
+ "strangelove": {
+  "title": "Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb",
+  "tmdb_movie_id": 935,
+  "source_work_id": 10572,
+  "source_title": "Red Alert",
+  "source_author": "Peter George",
+  "source_form": "novel",
+  "source_text": "U:/e-book/Red Alert (Peter George) (z-library.sk, 1lib.sk, z-lib.sk).epub",
+  "master": "T:/public/video/4KFilms/Dr Strangelove Or How I Learned to Stop Worrying 1964 2160p UHD BluRay x265 10bit HDR DDP5 1.mkv",
+  "subtitles": {
+   "en": {
+    "file": "master",
+    "stream": 2
+   },
+   "en-sdh": {
+    "file": "master",
+    "stream": 3
+   },
+   "fr": {
+    "file": "multi",
+    "stream": 4
+   },
+   "fr-forced": {
+    "file": "multi",
+    "stream": 3
+   },
+   "en-multi": {
+    "file": "multi",
+    "stream": 5
+   },
+   "en-proxy": {
+    "file": "proxy",
+    "stream": 5
+   }
+  },
+  "copies": {
+   "multi": "T:/public/video/4KFilms/Dr Strangelove (1964) MULTi VFI 2160p 10bit 4KLight HDR BluRay AC3 5.1 x265.mkv",
+   "proxy": "T:/public/video/HDFilms/Dr Strangelove 1964 1080p FR EN x264 ac3 mHDgz.mkv",
+   "mp4": "T:/public/video/HDFilms/Dr Strangelove 1964 1080p BluRay x265.mp4"
+  },
+  "places": {
+   "Alabama Angel": "Bomber",
+   "Sonora": "Base",
+   "The Pentagon": "Pentagon / War Room",
+   "Sac Hq": "SAC headquarters"
+  },
+  "visual_places": {
+   "Bomber": [
+    "the cramped interior of a bomber aircraft cockpit with pilots and crew at their stations",
+    "airmen wearing helmets and headsets inside an airplane",
+    "a large bomber aircraft flying low over snowy land",
+    "a man sitting on a bomb inside an aircraft bomb bay"
+   ],
+   "Pentagon / War Room": [
+    "a huge dark war room with a large round table under a ring of lights",
+    "men in suits and uniforms seated around a big circular conference table",
+    "a wall of large maps and screens in a dark command room",
+    "a man in a wheelchair with dark glasses in a dark room"
+   ],
+   "Base": [
+    "an office at an air force base with a general at his desk",
+    "a general and an officer talking in an office with a window",
+    "soldiers fighting with rifles outside a military base",
+    "a telephone booth and a soda machine outside"
+   ],
+   "Other": [
+    "opening title credits text on screen",
+    "two aircraft refuelling in the sky",
+    "a nuclear explosion mushroom cloud",
+    "a black screen"
+   ]
+  }
+ }
+}
