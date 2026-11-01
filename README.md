@@ -8,7 +8,7 @@ Give it a pair: the source text (an epub) and a copy of the film with subtitles.
 - **a best match** for every dialogue block of the film, in any order, which shows what was moved;
 - **a monotone path**: what the film keeps of the source, in the source's order;
 - **coverage by chapter**: how much of each chapter reaches the screen;
-- **places**: for a source told in alternating settings, which setting each part of the film belongs to;
+- **settings**: which setting each shot of the film belongs to, read from the frames (CLIP, with exemplars taken from the frames it is surest of and from lines that name a setting), set against the source's own place headings;
 - **an alignment curve** (PNG) and a Markdown summary for review.
 
 It is the evidence layer of a generated two-host comparison podcast (APP-IDEAS-010 in the author's backlog): every claim of the script points to a paragraph id, a cue id or a timecode produced here. Stills for those timecodes come from [iconic-scenes](https://github.com/vaugouin/iconic-scenes) (`iconic-scenes still <file> <start> <end>`).
@@ -19,7 +19,7 @@ The matching runs on the CPU with [fastembed](https://github.com/qdrant/fastembe
 
 ## Method
 
-After Pial et al. (2023), "Analyzing Film Adaptation through Narrative Alignment", simplified: cosine similarity between source windows and film dialogue blocks, then a dynamic-programming alignment that may skip on both sides (a skipped window is a cut, a skipped block is invented or changed material). Places are inferred by a Viterbi pass over the source's own place headings, so a place holds for several blocks.
+After Pial et al. (2023), "Analyzing Film Adaptation through Narrative Alignment", simplified: cosine similarity between source windows and film dialogue blocks, then a dynamic-programming alignment that may skip on both sides (a skipped window is a cut, a skipped block is invented or changed material). Settings are read from one thumbnail per second: CLIP zero-shot on a few prompts per setting, then the surest seconds and the seconds whose dialogue names exactly one setting become image exemplars, a nearest-neighbour vote labels every second, and a Viterbi pass keeps a setting for the length of a scene.
 
 ## Usage
 
@@ -30,6 +30,7 @@ uv run source-to-screen text strangelove      # epub to chapters and paragraphs
 uv run source-to-screen subs strangelove      # demux and read the subtitle tracks named in data/pairs.json
 uv run source-to-screen offsets strangelove   # do the other copies share the master's timeline?
 uv run source-to-screen shots strangelove     # shot changes on a light copy (ffmpeg scdet)
+uv run source-to-screen places strangelove    # setting of every second and shot, from the frames
 uv run source-to-screen align strangelove     # embeddings, anchors, path, places, coverage
 uv run source-to-screen report strangelove    # alignment curve and summary
 ```

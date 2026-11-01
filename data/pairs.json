@@ -64,11 +64,58 @@
     "soldiers fighting with rifles outside a military base",
     "a telephone booth and a soda machine outside"
    ],
+   "Turgidson's bedroom": [
+    "a woman in a bikini in a hotel bedroom with a mirror",
+    "a man in a Hawaiian shirt talking on the phone in a bedroom"
+   ],
    "Other": [
     "opening title credits text on screen",
     "two aircraft refuelling in the sky",
     "a nuclear explosion mushroom cloud",
     "a black screen"
+   ]
+  },
+  "dialogue_places": {
+   "Pentagon / War Room": [
+    "mr. president",
+    "dimitri",
+    "premier",
+    "ambassador",
+    "de sadesky",
+    "strangelove",
+    "war room",
+    "doomsday",
+    "staines",
+    "gentlemen",
+    "the board"
+   ],
+   "Base": [
+    "mandrake",
+    "group captain",
+    "jack",
+    "bodily fluids",
+    "fluoridation",
+    "guano",
+    "coca-cola",
+    "burpelson",
+    "base defense",
+    "perimeter"
+   ],
+   "Bomber": [
+    "kong",
+    "lothar",
+    "goldberg",
+    "dietrich",
+    "ace",
+    "crm",
+    "bomb bay",
+    "ICBM",
+    "laputa",
+    "fuel",
+    "mission",
+    "wing attack",
+    "radar",
+    "altitude"
    ]
   }
  }

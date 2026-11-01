@@ -61,6 +61,22 @@ def markdown(res: dict, text: dict) -> str:
     for p in res["places"]:
         bs = [b for b in blks if _place(b) == p]
         lines.append(f"| {p} | {sum(b['end'] - b['start'] for b in bs) / 60:.1f} | {len(bs)} |")
+    vis = config.work(res["pair"], "places") / "places.json"
+    if vis.exists():
+        v = config.load(vis)
+        total = len(v["seconds"])
+        words = {}
+        for ch in text["chapters"]:
+            words[ch["place"]] = words.get(ch["place"], 0) + ch["words"]
+        lines += ["", "## Settings: share of the novel against share of the film (from the frames)", "",
+                  "| Setting | Novel words | Novel share | Film minutes | Film share |", "|---|---|---|---|---|"]
+        for pl in v["places"]:
+            secs = sum(x["place"] == pl for x in v["seconds"])
+            w = words.get(pl, 0)
+            lines.append(f"| {pl} | {w} | {w / text['words']:.0%} | {secs / 60:.1f} | {secs / total:.0%} |")
+        for pl, w in words.items():
+            if pl not in v["places"]:
+                lines.append(f"| {pl} | {w} | {w / text['words']:.0%} | 0.0 | 0% |")
     lines += ["", f"## Verbatim anchors ({len(res['anchors'])})", "", "| Film time | Source paragraph | Score | Film line |", "|---|---|---|---|"]
     for a in res["anchors"]:
         lines.append(f"| {_fmt(a['start'])} | {a['source']} | {a['score']} | {a['film'][:90]} |")

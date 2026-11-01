@@ -26,7 +26,11 @@ Align a film or series with its source work (source text against subtitles and s
 - **Epub spine order, not file names**: Calibre splits sort as split_1, split_10, split_2 (`text.spine`).
 - **Munsey's-style epubs** put a whole chapter in one `<p>` and mark paragraphs with `<br/>`: `text._Blocks` splits on `<br>`.
 - **Demuxing an embedded subtitle track reads the whole file** over the NAS: 11.7 MB/s on 2026-11-01, so about 8 minutes for a 5.7 GB copy. Do it once; `subs` skips tracks whose `.srt` exists.
-- The embedding model is downloaded to `models/fastembed/` on first use (gitignored); a copy is kept in `C:\Users\vaugo\Data\soft\ai-models\bge-small-en-v1.5\` per the global rule.
+- The embedding model is downloaded to `models/fastembed/` on first use (gitignored); a copy is kept in `C:\Users\vaugo\Data\soft\ai-models\bge-small-en-v1.5\` per the global rule; same for the CLIP pair (`clip-vit-b-32-vision`, `clip-vit-b-32-text`).
+- **Settings come from the frames, not the dialogue** (`places.py`): talk of the bomb sounds alike in every set, so a dialogue-only guess put the last 40 minutes in the bomber. Method: one 320 px thumbnail per second, CLIP (fastembed `Qdrant/clip-ViT-B-32`) zero-shot on the prompts of `visual_places`; the surest seconds plus the seconds whose dialogue names exactly one setting (`dialogue_places`: "Mr. President", "Group Captain", "Kong") become image exemplars; k-NN vote; dialogue bonus; Viterbi smoothing; a shot takes the majority of its seconds. Prompts alone confused War Room close-ups with Ripper's office (19/24); the dialogue exemplars fixed it: 23/24 on the tuning sample, 24/24 on a fresh sample (2026-11-01). Image vectors are cached in `work/<pair>/places/images.npy` (computing them takes 10 min).
+- **ffmpeg scdet** logs its cuts itself (`lavfi.scd.score: x, lavfi.scd.time: y` on one line): parse that, not `metadata=print`.
+- **ASS tracks cannot be stream-copied to .srt**: `subs.extract` converts with `-c:s srt`.
+- Strangelove offsets (2026-11-01): MULTi +0.078 s, 1080p FR EN x264 -0.020 s, both `same_timeline`.
 
 ## Dependencies on other repos
 
