@@ -31,8 +31,18 @@ Align a film or series with its source work (source text against subtitles and s
 - **ffmpeg scdet** logs its cuts itself (`lavfi.scd.score: x, lavfi.scd.time: y` on one line): parse that, not `metadata=print`.
 - **ASS tracks cannot be stream-copied to .srt**: `subs.extract` converts with `-c:s srt`.
 - Strangelove offsets (2026-11-01): MULTi +0.078 s, 1080p FR EN x264 -0.020 s, both `same_timeline`.
+- **The corpus must be byte-identical from run to run**, or the prompt cache is never read: `max(set(x), key=x.count)` breaks ties in set order, which changes between processes (string hash randomisation). Use `sorted(set(x))`. On 2026-11-01 this cost two full cache writes (about 1.6 $ each) before it was found; check with an md5 of `compare.corpus()` over two processes.
+- **Save a paid answer before touching it**: `compare.ask` writes `work/last-answer.json` first. A crash on `msg._request_id` (absent on the streamed `ParsedMessage` of SDK 2.3) once lost a 2.85 $ answer.
+- **Fuzzy anchors are candidates, not evidence**: partial-ratio 100 fires on short common phrases ("I think I do"). On the pilot, Claude marked 3 of the 6 as false and found the true sources; the `quotes` table of `compare.json` is the reference.
+- Facts: the source work sheet carries the film's IMDb rating; `facts.py` drops IMDb fields from source works. The novel's Wikipedia plot in the API says the bomber is "shot down": wrong, the bomb falls and only the trigger fires (ch25.p012-p014).
+
+## Claude passes (`compare.py`)
+
+- Key: `ANTHROPIC_API_KEY` from `~/Code/fastapi-text2sql/.env` (Philippe's Individual Org, monthly Max plan credit), never printed. API facts: `TEXT2SQL_API_KEY` from `~/Code/text2sql-eval/.env`, green colour over Tailscale by default (`S2S_API_BASE` to change).
+- Strangelove: corpus 205k tokens; compare 60k output tokens (2.85 $ with a cache write), outline 27k (2.30 $). With the cache read, a rerun of either pass costs about its output alone.
+- Outputs under `work/<pair>/review/`: `corpus.txt`, `compare.json`, `outline.json`, their `.check.json` (usage, unknown ids, copied runs), `stop1.md`.
 
 ## Dependencies on other repos
 
 - **iconic-scenes** (`~/Code/iconic-scenes`): stills for a time span of one file, `iconic-scenes still <file> <start> <end> --name <n> --out <dir>` (from 0.2.0).
-- **fastapi-text2sql** API (`/movies/{id}`, `/sourceworks/{id}`) for facts; not called by this repo yet.
+- **fastapi-text2sql** API (`/movies/{id}`, `/sourceworks/{id}`) for facts, read by `facts.py`.

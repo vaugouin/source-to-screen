@@ -9,13 +9,15 @@ Give it a pair: the source text (an epub) and a copy of the film with subtitles.
 - **a monotone path**: what the film keeps of the source, in the source's order;
 - **coverage by chapter**: how much of each chapter reaches the screen;
 - **settings**: which setting each shot of the film belongs to, read from the frames (CLIP, with exemplars taken from the frames it is surest of and from lines that name a setting), set against the source's own place headings;
-- **an alignment curve** (PNG) and a Markdown summary for review.
+- **an alignment curve** (PNG) and a Markdown summary for review;
+- **facts** from the fastapi-text2sql API (film sheet, source work sheet) as ledger entries with stable ids;
+- **a comparison and an outline** written by Claude from the whole source text, the whole subtitle track, the measures and the ledger: cardinal functions, differences with their explanation, characters, coverage chapter by chapter, inventions, the lines the film keeps, then a timed episode outline. A checker refuses any id that is not in the corpus and any run of ten words copied from the source.
 
 It is the evidence layer of a generated two-host comparison podcast (APP-IDEAS-010 in the author's backlog): every claim of the script points to a paragraph id, a cue id or a timecode produced here. Stills for those timecodes come from [iconic-scenes](https://github.com/vaugouin/iconic-scenes) (`iconic-scenes still <file> <start> <end>`).
 
-## Why local models
+## Why local models, then Claude
 
-The matching runs on the CPU with [fastembed](https://github.com/qdrant/fastembed) (`BAAI/bge-small-en-v1.5`, ONNX) and [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz): no API call, no token cost, the same result on every run. Language models come later, in the comparison and script passes, and read this layer's output.
+The matching runs on the CPU with [fastembed](https://github.com/qdrant/fastembed) (`BAAI/bge-small-en-v1.5`, ONNX) and [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz): no API call, no token cost, the same result on every run. Claude comes after, in the comparison and outline passes (`claude-opus-5-5`, key `ANTHROPIC_API_KEY`), and reads this layer's output rather than its memory of the works: on the pilot it found that half of the fuzzy anchors were false and that the film keeps about thirty lines of the novel, most of them in the general's speech to his base.
 
 ## Method
 
@@ -33,6 +35,10 @@ uv run source-to-screen shots strangelove     # shot changes on a light copy (ff
 uv run source-to-screen places strangelove    # setting of every second and shot, from the frames
 uv run source-to-screen align strangelove     # embeddings, anchors, path, places, coverage
 uv run source-to-screen report strangelove    # alignment curve and summary
+uv run source-to-screen facts strangelove     # film and source work sheets from the API, as ledger entries
+uv run source-to-screen compare strangelove   # Claude: comparison tables (about 205k input tokens, cached)
+uv run source-to-screen outline strangelove   # Claude: timed outline, from the comparison
+uv run source-to-screen review strangelove    # review document (work/<pair>/review/stop1.md)
 ```
 
 Pairs are declared in `data/pairs.json`: the source text, the master copy (the one whose timecodes every output uses), the other copies and their subtitle streams.

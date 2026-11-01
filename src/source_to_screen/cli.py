@@ -1,8 +1,8 @@
-"""source-to-screen text|subs|offsets|shots|places|align|report|all <pair>"""
+"""source-to-screen text|subs|offsets|shots|places|align|report|all|facts|compare|outline|review <pair>"""
 import argparse
 import sys
 
-from . import align, config, places, report, shots, subs, text
+from . import align, compare, config, facts, places, report, review, shots, subs, text
 
 
 def do_text(p: dict) -> None:
@@ -45,7 +45,8 @@ def do_offsets(p: dict) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(prog="source-to-screen")
-    ap.add_argument("step", choices=["text", "subs", "offsets", "shots", "places", "align", "report", "all"])
+    ap.add_argument("step", choices=["text", "subs", "offsets", "shots", "places", "align", "report", "all",
+                                     "facts", "compare", "outline", "review"])
     ap.add_argument("pair", help="key of data/pairs.json, e.g. strangelove")
     ap.add_argument("--track", default="en-sdh", help="subtitle track for the alignment")
     ap.add_argument("--copy", default="proxy", help="copy used for shot detection (must share the master's timeline)")
@@ -82,6 +83,13 @@ def main() -> None:
         elif step == "report":
             for f in report.write(p["slug"]):
                 print(f"report: {f}")
+        elif step == "facts":
+            print(f"facts: {facts.run(p['slug'])}")
+        elif step in ("compare", "outline"):
+            print(f"{step}: {compare.run(p['slug'], step)}")
+        elif step == "review":
+            for f in review.write(p["slug"]):
+                print(f"review: {f}")
 
 
 if __name__ == "__main__":

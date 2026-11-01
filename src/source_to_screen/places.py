@@ -139,7 +139,7 @@ def run(slug: str, copy: str = "proxy", offset: float = 0.0) -> dict:
     for s in shots:
         inside = [x["place"] for x in seconds if s["start"] + offset <= x["t"] < s["end"] + offset] or \
                  [min(seconds, key=lambda x: abs(x["t"] - (s["start"] + s["end"]) / 2 - offset))["place"]]
-        s["place"] = max(set(inside), key=inside.count)
+        s["place"] = max(sorted(set(inside)), key=inside.count)
     res = dict(copy=copy, offset=offset, places=places, seconds=seconds, shots=shots)
     np.save(config.work(slug, "places") / "votes.npy", votes)
     config.save(config.work(slug, "places") / "places.json", res)
@@ -149,4 +149,6 @@ def run(slug: str, copy: str = "proxy", offset: float = 0.0) -> dict:
 def place_at(res: dict, start: float, end: float) -> str | None:
     """Majority place of the seconds within [start, end) on the master's timeline."""
     inside = [x["place"] for x in res["seconds"] if start <= x["t"] < end]
-    return max(set(inside), key=inside.count) if inside else None
+    # sorted, not set(): set order changes between processes, which made the corpus differ
+    # from run to run and defeated the prompt cache
+    return max(sorted(set(inside)), key=inside.count) if inside else None
