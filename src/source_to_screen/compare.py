@@ -19,7 +19,7 @@ from . import config, places
 
 MODEL = "claude-opus-5-5"
 ENV_FILE = Path(os.environ.get("S2S_ANTHROPIC_ENV", Path.home() / "Code" / "fastapi-text2sql" / ".env"))
-ID = re.compile(r"^(ch\d\d\.p\d{3}|ch\d\d|en-sdh\.\d{4}|api:[\w.\-]+|measure:[\w.\-/ ']+)$")
+ID = re.compile(r"^(ch\d\d\.p\d{3}|ch\d\d|en-sdh\.\d{4}|api:[\w.\-]+|web:[\w.\-]+|measure:[\w.\-/ ']+)$")
 
 
 def _key() -> str:
@@ -200,13 +200,18 @@ def _client():
     return anthropic.Anthropic(api_key=_key(), max_retries=3)
 
 
-def ask(system_text: str, task: str, effort: str = "high") -> tuple[str, dict]:
+def ask(system_text: str, task: str, effort: str = "high", rules: str = RULES, extra: str | None = None,
+        max_tokens: int = 64000) -> tuple[str, dict]:
+    """`rules` then the corpus (cached), then `extra` (cached too: shared by several calls of one pass)."""
     client = _client()
+    system = [{"type": "text", "text": rules},
+              {"type": "text", "text": system_text, "cache_control": {"type": "ephemeral", "ttl": "1h"}}]
+    if extra:
+        system.append({"type": "text", "text": extra, "cache_control": {"type": "ephemeral", "ttl": "1h"}})
     kwargs = dict(
-        model=MODEL, max_tokens=64000,
+        model=MODEL, max_tokens=max_tokens,
         thinking={"type": "adaptive"}, output_config={"effort": effort},
-        system=[{"type": "text", "text": RULES},
-                {"type": "text", "text": system_text, "cache_control": {"type": "ephemeral", "ttl": "1h"}}],
+        system=system,
         messages=[{"role": "user", "content": task}],
     )
     with client.messages.stream(**kwargs) as stream:
@@ -214,6 +219,8 @@ def ask(system_text: str, task: str, effort: str = "high") -> tuple[str, dict]:
     text = "".join(b.text for b in msg.content if b.type == "text")
     # save first: a crash below must not lose a paid answer
     (config.WORK / "last-answer.json").write_text(msg.model_dump_json(), encoding="utf-8")
+    if msg.stop_reason == "max_tokens":
+        raise SystemExit(f"answer cut at max_tokens ({u_out(msg)} output tokens): saved in work/last-answer.json")
     if msg.stop_reason == "refusal":
         raise SystemExit(f"refusal: {msg.stop_details}")
     u = msg.usage
@@ -224,6 +231,11 @@ def ask(system_text: str, task: str, effort: str = "high") -> tuple[str, dict]:
     usage["cost_usd"] = round(u.input_tokens * 4e-6 + usage["cache_write"] * 8e-6 + usage["cache_read"] * 0.2e-6
                               + u.output_tokens * 20e-6, 3)
     return text, usage
+
+
+def u_out(msg) -> str:
+    d = getattr(msg.usage, "output_tokens_details", None)
+    return f"{msg.usage.output_tokens}, thinking {getattr(d, 'thinking_tokens', '?')}"
 
 
 def parse(text: str) -> dict:

@@ -11,6 +11,7 @@ Give it a pair: the source text (an epub) and a copy of the film with subtitles.
 - **settings**: which setting each shot of the film belongs to, read from the frames (CLIP, with exemplars taken from the frames it is surest of and from lines that name a setting), set against the source's own place headings;
 - **an alignment curve** (PNG) and a Markdown summary for review;
 - **facts** from the fastapi-text2sql API (film sheet, source work sheet) as ledger entries with stable ids;
+- **a script and a fact check**, then a **scenario** for voice-agent's cinema mode (two hosts, film stills, cards, credits);
 - **a comparison and an outline** written by Claude from the whole source text, the whole subtitle track, the measures and the ledger: cardinal functions, differences with their explanation, characters, coverage chapter by chapter, inventions, the lines the film keeps, then a timed episode outline. A checker refuses any id that is not in the corpus and any run of ten words copied from the source.
 
 It is the evidence layer of a generated two-host comparison podcast (APP-IDEAS-010 in the author's backlog): every claim of the script points to a paragraph id, a cue id or a timecode produced here. Stills for those timecodes come from [iconic-scenes](https://github.com/vaugouin/iconic-scenes) (`iconic-scenes still <file> <start> <end>`).
@@ -39,7 +40,12 @@ uv run source-to-screen facts strangelove     # film and source work sheets from
 uv run source-to-screen compare strangelove   # Claude: comparison tables (about 205k input tokens, cached)
 uv run source-to-screen outline strangelove   # Claude: timed outline, from the comparison
 uv run source-to-screen review strangelove    # review document (work/<pair>/review/stop1.md)
+uv run source-to-screen script strangelove    # Claude: the episode script in five parts, from the reviewed material
+uv run source-to-screen judge strangelove     # Claude: every line checked against the ids it cites
+uv run source-to-screen episode strangelove   # the script as a voice-agent cinema scenario (voices, stills, credits)
 ```
+
+The scenario is then built and rendered by [voice-agent](https://github.com/vaugouin/voice-agent)'s cinema mode: `uv run tools/build-cinema-assets.py <scenario>` (frames, images, voices, timeline), then `uv run tools/render-cinema-stills.py <slug> --mp4` with the app running. Every film still is checked by eye on a contact sheet before the render: a still must show the speaker of its line, or the action it describes, and a still that does not is pinned to the right moment in `work/<pair>/episode/frame-overrides.json`.
 
 Pairs are declared in `data/pairs.json`: the source text, the master copy (the one whose timecodes every output uses), the other copies and their subtitle streams.
 

@@ -1,8 +1,8 @@
-"""source-to-screen text|subs|offsets|shots|places|align|report|all|facts|compare|outline|review <pair>"""
+"""source-to-screen text|subs|offsets|shots|places|align|report|all|facts|compare|outline|review|script|episode <pair>"""
 import argparse
 import sys
 
-from . import align, compare, config, facts, places, report, review, shots, subs, text
+from . import align, compare, config, episode, facts, places, report, review, script, shots, subs, text
 
 
 def do_text(p: dict) -> None:
@@ -46,7 +46,9 @@ def do_offsets(p: dict) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(prog="source-to-screen")
     ap.add_argument("step", choices=["text", "subs", "offsets", "shots", "places", "align", "report", "all",
-                                     "facts", "compare", "outline", "review"])
+                                     "facts", "compare", "outline", "review", "script", "judge", "episode"])
+    ap.add_argument("--tts", default="openai", choices=["openai", "gemini"], help="voices credited and built (episode)")
+    ap.add_argument("--parts", default="1,2,3,4,5", help="script parts to write, e.g. 2,3")
     ap.add_argument("pair", help="key of data/pairs.json, e.g. strangelove")
     ap.add_argument("--track", default="en-sdh", help="subtitle track for the alignment")
     ap.add_argument("--copy", default="proxy", help="copy used for shot detection (must share the master's timeline)")
@@ -90,6 +92,12 @@ def main() -> None:
         elif step == "review":
             for f in review.write(p["slug"]):
                 print(f"review: {f}")
+        elif step == "script":
+            print(f"script: {script.run(p['slug'], [int(x) for x in args.parts.split(',')])}")
+        elif step == "judge":
+            print(f"judge: {script.judge(p['slug'])}")
+        elif step == "episode":
+            print(f"episode: {episode.build(p['slug'], args.tts)}")
 
 
 if __name__ == "__main__":
