@@ -9,9 +9,16 @@ Mapping:
   `offsets`), taken at the sharpest moment INSIDE the cue, so the speaker of the line is on screen; a
   still at a time -> the sharpest frame in the next second and a half;
 - people by name -> TMDb person ids of the film's cast and crew (API sheet); posters by key -> web.json;
-- the credits cards are appended here, from CREDITS (producer's text, not the model's)."""
+- actors shown as their characters, cut from the film (work/<pair>/portraits/char-*.jpg, copied to the assets);
+- one still per shot (the same shot within 8 s becomes a hold); a frame checked by eye can be pinned in
+  work/<pair>/episode/frame-overrides.json (beat id, or beat id + L/R);
+- no evidence id on screen (card `source` dropped), chapter cards title only, posters panned on first sight;
+- silent scrolling end credits from credits_roll() (the real sources; the producer for the production)."""
 import json
 import re
+
+import shutil
+import urllib.request
 
 from . import config
 
@@ -33,45 +40,55 @@ COPY = "proxy"
 TTS = {"openai": dict(tts_spoken="OpenAI's", tts_line="gpt-4o-mini-tts (OpenAI): the two voices, marin and cedar (lowered two semitones)"),
        "gemini": dict(tts_spoken="Gemini's", tts_line="Gemini 3.8 Flash TTS (Google): the two voices, Laomedeia and Algenib; faster-whisper small for the line timing")}
 
-CREDITS = [
-    ("The works", "viewer",
-     "The works: Red Alert, the novel by Peter George, 1958, and Dr. Strangelove, Stanley Kubrick's film of 1964.",
-     ["Red Alert, novel by Peter George (as Peter Bryant), 1958; first published as Two Hours to Doom",
-      "Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb (1964), Columbia Pictures",
-      "Directed and produced by Stanley Kubrick; screenplay by Stanley Kubrick, Terry Southern, Peter George",
-      "With Peter Sellers, George C. Scott, Sterling Hayden, Keenan Wynn, Slim Pickens, Peter Bull, Tracy Reed, James Earl Jones",
-      "Film stills are quoted for commentary and criticism; the novel is retold, not reproduced",
-      "Also shown: posters of Fail Safe (1964, Sidney Lumet) and of Kubrick's other films"],
-     "Rights remain with their holders."),
-    ("Sources", "reader",
-     "Our facts come from Philippe Vaugouin's movie database and its API, built on TMDb, Wikipedia and Wikidata, plus two critics' essays.",
-     ["fastapi-text2sql API 1.1.19: film and source work sheets (TMDb, Wikipedia, Wikidata, IMDb rating)",
-      "The Movie Database (TMDb): cast, crew, posters, portraits. This product uses the TMDb API but is not endorsed or certified by TMDb",
-      "Wikipedia (CC BY-SA): Dr. Strangelove, Red Alert (novel), Fail Safe (1964 film)",
-      "Turner Classic Movies, The Essentials: Dr. Strangelove (essay)",
-      "F. Anthony Macklin, Sex and Dr. Strangelove, Film Comment, Summer 1965",
-      "Art of the Title: the opening title sequence"],
-     "Every fact line of the script cites one of these, a page of the novel or a subtitle of the film."),
-    ("Models", "viewer",
-     "The script was written by Claude, the voices are {tts_spoken}, and smaller open models aligned the book with the film.",
-     ["Claude Opus 5.5 (Anthropic): comparison, outline, script and fact check, from the full novel, subtitles and database sheets",
-      "{tts_line}",
-      "BGE small en v1.5 (fastembed): alignment of novel passages with film dialogue",
-      "CLIP ViT-B/32: which setting each shot of the film belongs to"],
-     "The hosts are synthetic voices. They are not people, and they say so."),
-    ("Software", "reader",
-     "And the tools: source-to-screen, iconic-scenes and the voice-agent player, all open source, with ffmpeg underneath.",
-     ["source-to-screen: the novel and the film aligned, the facts ledger, the Claude passes (github.com/vaugouin)",
-      "iconic-scenes: film stills for a time span (github.com/vaugouin)",
-      "voice-agent cinema player: audio build, stills, video (github.com/vaugouin)",
-      "ffmpeg, Playwright and Chrome, Python and uv, RapidFuzz, fastembed"],
-     None),
-    ("Produced by Philippe Vaugouin", "viewer",
-     "This episode was produced by Philippe Vaugouin. Thanks for listening.",
-     ["Pilot episode of a series comparing films with the works they adapt (APP-IDEAS-010)",
-      "Script checked against its sources by machine; produced and reviewed by Philippe Vaugouin"],
-     "November 2026"),
-]
+# Scrolling end credits, silent (Philippe, 2026-11-02): the real sources only; Philippe for the production.
+def credits_roll(tts: str) -> list[dict]:
+    voices = ("Gemini 3.8 Flash TTS (Google), voices Laomedeia and Algenib" if tts == "gemini"
+              else "gpt-4o-mini-tts (OpenAI), voices marin and cedar")
+    return [
+        dict(heading="Produced by", lines=["Philippe Vaugouin"]),
+        dict(heading="Script", lines=["Claude Opus 5.5 (Anthropic), from the novel, the film and the sources below",
+                                      "Every line checked against its source before recording"]),
+        dict(heading="Voices", lines=[voices, "The two hosts are synthetic voices"]),
+        dict(heading="The novel", lines=["Red Alert, by Peter George (as Peter Bryant)",
+                                         "First published in 1958 as Two Hours to Doom"]),
+        dict(heading="The film", lines=["Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb (1964)",
+                                        "Directed and produced by Stanley Kubrick",
+                                        "Screenplay by Stanley Kubrick, Terry Southern and Peter George",
+                                        "Peter Sellers, George C. Scott, Sterling Hayden, Keenan Wynn, Slim Pickens",
+                                        "Peter Bull, Tracy Reed, James Earl Jones",
+                                        "A Columbia Pictures release"]),
+        dict(heading="Also shown", lines=["Fail Safe (1964), directed by Sidney Lumet",
+                                          "National Theatre Live: Dr. Strangelove (2025), with Steve Coogan"]),
+        dict(heading="Sources", lines=["The Movie Database (TMDb): cast, crew, posters, portraits",
+                                       "This product uses the TMDb API but is not endorsed or certified by TMDb",
+                                       "Wikipedia (CC BY-SA): Dr. Strangelove, Red Alert (novel), Fail Safe (1964 film)",
+                                       "Wikidata (CC0), IMDb ratings",
+                                       "Turner Classic Movies, The Essentials: Dr. Strangelove",
+                                       "F. Anthony Macklin, Sex and Dr. Strangelove, Film Comment, Summer 1965",
+                                       "Art of the Title: Dr. Strangelove"]),
+        dict(heading="Made with", lines=["source-to-screen, iconic-scenes, voice-agent (github.com/vaugouin)",
+                                         "BGE small (fastembed), CLIP ViT-B/32, faster-whisper",
+                                         "ffmpeg, Playwright, Chrome, Python, uv, RapidFuzz"]),
+    ]
+
+
+CREDITS_FOOTER = ("Film stills and posters are quoted for criticism and commentary. The novel is retold, not "
+                  "reproduced. All rights remain with their holders.")
+
+# Actors are shown as their characters, cut from the film (work/<pair>/portraits/char-<key>.jpg); a crew member
+# or an actor without a crop keeps the TMDb portrait. Sellers without `as` gets his three parts.
+CHARACTERS = {
+    "Peter Sellers": {"mandrake": "mandrake", "muffley": "muffley", "president": "muffley", "strangelove": "strangelove"},
+    "Sterling Hayden": {"": "ripper"}, "George C. Scott": {"": "turgidson"}, "Slim Pickens": {"": "kong"},
+    "James Earl Jones": {"": "zogg"}, "Tracy Reed": {"": "missscott"}, "Peter Bull": {"": "desadesky"},
+    "Keenan Wynn": {"": "guano"},
+}
+CHAR_LABEL = {"mandrake": "Group Captain Mandrake", "muffley": "President Muffley", "strangelove": "Dr. Strangelove",
+              "ripper": "General Jack D. Ripper", "turgidson": "General Buck Turgidson", "kong": "Major T. J. Kong",
+              "zogg": "Lt. Lothar Zogg", "missscott": "Miss Scott", "desadesky": "Ambassador de Sadesky",
+              "guano": "Colonel Bat Guano"}
+VOICE_AGENT_ASSETS = config.ROOT.parent / "voice-agent" / "cinema" / "assets"
+TMDB_ORIGINAL = "https://image.tmdb.org/t/p/original"
 
 
 def _ts(sec: float) -> str:
@@ -86,7 +103,14 @@ def _time(s: str) -> float:
     return parts[0] * 3600 + parts[1] * 60 + parts[2]
 
 
-def build(slug: str, tts: str = "openai") -> dict:
+def _shot_of(shots: list, t: float) -> str | None:
+    for sh in shots:
+        if sh["start"] <= t < sh["end"]:
+            return sh["id"]
+    return None
+
+
+def build(slug: str, tts: str = "gemini") -> dict:
     p = config.pair(slug)
     sdir = config.work(slug, "script")
     script = config.load(sdir / "script.json")
@@ -99,7 +123,16 @@ def build(slug: str, tts: str = "openai") -> dict:
     for c in (movie.get("cast") or []) + (movie.get("crew") or []):
         people.setdefault(c["PERSON_NAME"], dict(person_id=c["ID_PERSON"], name=c["PERSON_NAME"],
                                                  profile_path=c.get("PROFILE_PATH")))
+    for name, x in web.get("extra_people", {}).items():
+        people.setdefault(name, dict(person_id=x["person_id"], name=name, profile_path=x.get("profile_path")))
     persons, related, problems = {}, {}, []
+    shots = config.load(config.work(slug, "shots") / "shots.json")["shots"]
+    used_shots: set = set()   # one still per shot in the whole episode: a repeated shot becomes a hold
+    shown_images: set = set()  # the first time a poster or cover appears, it pans
+    assets = VOICE_AGENT_ASSETS / slug / "images"
+    assets.mkdir(parents=True, exist_ok=True)
+    for f in config.work(slug, "portraits").glob("char-*.jpg"):
+        shutil.copyfile(f, assets / f.name)
     # frames moved by hand after the eye check (beat id, or beat id + L/R for a split): exact frame
     ov_file = config.work(slug, "episode") / "frame-overrides.json"
     overrides = {k: v for k, v in (config.load(ov_file) if ov_file.exists() else {}).items() if not k.startswith("_")}
@@ -117,9 +150,16 @@ def build(slug: str, tts: str = "openai") -> dict:
     def brick(v: dict, beat_id: str) -> dict:
         t = v.get("type", "hold")
         if t == "still":
-            out = dict(type="quoted_frame" if v.get("quoted") else "frame", caption=v.get("caption", ""),
-                       shows=v.get("shows", ""), **frame(v, beat_id))
-            return out
+            spec = frame(v, beat_id)
+            at = _time(spec["timecode"]) + (spec.get("window") or [0, 0])[0]
+            shot = _shot_of(shots, at)
+            # the same shot within 8 s is the same picture (a long shot, the opening titles, may serve twice)
+            if any(sh == shot and abs(t0 - at) < 8 for sh, t0 in used_shots):
+                problems.append(f"{beat_id}: still in an already used shot ({shot}), held instead")
+                return dict(type="hold")
+            used_shots.add((shot, at))
+            return dict(type="quoted_frame" if v.get("quoted") else "frame", caption=v.get("caption", ""),
+                        shows=v.get("shows", ""), **spec)
         if t == "split":
             return dict(type="split_frames", caption=v.get("caption", ""),
                         left=dict(frame(v["left"], beat_id + "L"), shows=v["left"].get("shows", "")),
@@ -132,6 +172,10 @@ def build(slug: str, tts: str = "openai") -> dict:
                 out["movie_id"] = ids if len(ids) > 1 else ids[0]
             if "novel" in works:
                 out["source_work_id"] = p["source_work_id"]
+            key = json.dumps(works)
+            if len(works) == 1 and works != ["novel"] and key not in shown_images:
+                out["motion"] = "pan"  # first appearance of a poster or a cover: scrolled, then shown whole
+            shown_images.add(key)
             return out
         if t == "portraits":
             ppl = []
@@ -141,7 +185,16 @@ def build(slug: str, tts: str = "openai") -> dict:
                     problems.append(f"{beat_id}: no person '{x['name']}'")
                     continue
                 persons[person["person_id"]] = person
-                ppl.append(dict(person_id=person["person_id"], caption=x.get("caption", "")))
+                roles = CHARACTERS.get(x["name"])
+                if roles:
+                    as_ = (x.get("as") or "").lower()
+                    keys = [k for w, k in roles.items() if w and w in as_] or (
+                        [roles[""]] if "" in roles else ["mandrake", "muffley", "strangelove"])
+                    for k in dict.fromkeys(keys):
+                        ppl.append(dict(person_id=person["person_id"], image=f"images/char-{k}.jpg",
+                                        name=CHAR_LABEL[k], caption=x["name"]))
+                else:
+                    ppl.append(dict(person_id=person["person_id"], caption=x.get("caption", "")))
             return dict(type="portraits", people=ppl, caption=v.get("caption", "")) if ppl else dict(type="hold")
         if t == "posters":
             items = []
@@ -154,8 +207,15 @@ def build(slug: str, tts: str = "openai") -> dict:
                 items.append(dict(kind="movie", id=e["id"]))
             return dict(type="poster_wall", items=items, caption=v.get("caption", "")) if items else dict(type="hold")
         if t == "quote_card" and "paraphrase" in (v.get("attribution") or "").lower():
-            return dict(v, type=t, paraphrase=True)
-        if t in ("quote_card", "card", "hold"):
+            return dict(v, type=t, paraphrase=True, image="images/cover-10572.jpg")
+        if t == "quote_card" and "kubrick" in (v.get("attribution") or "").lower():
+            return dict(v, type=t, image="images/kubrick.jpg")
+        if t == "card":
+            out = {k: x for k, x in v.items() if k != "source"}  # no evidence ids on screen
+            if out.get("variant") == "chapter":
+                out.pop("lines", None)
+            return dict(out, type=t)
+        if t in ("quote_card", "hold"):
             return dict(v, type=t)
         problems.append(f"{beat_id}: unknown visual {t}")
         return dict(type="hold")
@@ -172,11 +232,16 @@ def build(slug: str, tts: str = "openai") -> dict:
         beats.append(beat)
     if beats and beats[0]["brick"]["type"] == "hold":
         beats[0]["brick"] = dict(type="title_card", movie_id=p["tmdb_movie_id"], source_work_id=p["source_work_id"])
-    for k, (title, voice, line, lines, source) in enumerate(CREDITS, 1):
-        line, lines = line.format(**TTS[tts]), [x.format(**TTS[tts]) for x in lines]
-        beats.append(dict(id=f"c{k:02d}", voice=voice, track="performance", text=line, source=[dict(type="none")],
-                          brick=dict(type="card", variant="credits", title=title, lines=lines, source=source),
-                          delivery="Plain, warm, unhurried: end credits.", pause_after_ms=2600 if k < len(CREDITS) else 4000))
+    # chapter cards: "Chapter N" above the title
+    starts = {c["beat"]: n for n, c in enumerate(script.get("chapters", []), 1)}
+    for b in beats:
+        if b["id"] in starts and b["brick"].get("type") == "card" and b["brick"].get("variant") == "chapter":
+            b["brick"]["kicker"] = f"Chapter {starts[b['id']]}"
+    if beats:
+        beats[-1]["pause_after_ms"] = max(1500, beats[-1].get("pause_after_ms", 0))
+    kubrick = assets / "kubrick.jpg"
+    if not kubrick.exists() and people.get("Stanley Kubrick", {}).get("profile_path"):
+        urllib.request.urlretrieve(TMDB_ORIGINAL + people["Stanley Kubrick"]["profile_path"], kubrick)
     meta = dict(
         id=slug, title=script.get("title") or config.load(config.work(slug, "review") / "outline.json").get("title")
         or "Red Alert and Dr. Strangelove", language="en", version=3,
@@ -197,6 +262,10 @@ def build(slug: str, tts: str = "openai") -> dict:
                            subtitle="source-to-screen work/strangelove/subs/en-sdh.json (master copy timeline)",
                            note=f"SDR 1080p copy on the master's timeline (offset {offset:+.3f} s, applied)")},
         persons=list(persons.values()), related=list(related.values()),
+        images=dict(tmdb_base=TMDB_ORIGINAL, tmdb_profile_size="original", tmdb_wall_size="original",
+                    backdrop_url=TMDB_ORIGINAL + movie["BACKDROP_PATH"], backdrop_image="images/backdrop.jpg"),
+        credits=credits_roll(tts), credits_footer=CREDITS_FOOTER,
+        credits_subtitle="Red Alert, the novel, and Dr. Strangelove, the film",
         chapters=script.get("chapters", []),
         fetched=dict(api="http://100.113.161.122:8187", endpoints=["/movies/935", "/sourceworks/10572", "/movies/502"],
                      date="2026-11-01"))

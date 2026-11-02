@@ -40,6 +40,7 @@ Align a film or series with its source work (source text against subtitles and s
 ## Claude passes (`compare.py`)
 
 - **Prefer Claude on the plan over the API** (Philippe, 2026-11-02): from now on, a Claude pass (script, judge, revisions) is run by the Claude Code session itself or by a subagent, on the Max subscription, not through `ANTHROPIC_API_KEY`. The API passes below stay as a record and as a fallback.
+- **Revisions on the plan** (2026-11-02, Philippe's review stop 2): five subagents, one per part, each with `work/<pair>/script/revision.md` (the brief) and a word and still budget; then a fact-check subagent on the changed lines only (`judge-rev.json`). Version 1 is kept in `work/<pair>/script/v1/`. On air, no database vocabulary (record, sources, data, cue...): the grounding stays in the refs, invisible.
 - Strangelove script (2026-11-02): `script` in five parts (about 11,300 words, about 4 $ with the cache read), then `judge` (16 issues, all applied). A first single-part attempt at effort high spent its 64k output on thinking and wrote nothing (about 3.3 $ lost): keep the parts small and the effort at medium.
 
 - Key: `ANTHROPIC_API_KEY` from `~/Code/fastapi-text2sql/.env` (Philippe's Individual Org, monthly Max plan credit), never printed. API facts: `TEXT2SQL_API_KEY` from `~/Code/text2sql-eval/.env`, green colour over Tailscale by default (`S2S_API_BASE` to change).
