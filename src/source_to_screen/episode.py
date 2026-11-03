@@ -41,13 +41,15 @@ TTS = {"openai": dict(tts_spoken="OpenAI's", tts_line="gpt-4o-mini-tts (OpenAI):
        "gemini": dict(tts_spoken="Gemini's", tts_line="Gemini 3.8 Flash TTS (Google): the two voices, Laomedeia and Algenib; faster-whisper small for the line timing")}
 
 # Scrolling end credits, silent (Philippe, 2026-11-02): the real sources only; Philippe for the production.
-def credits_roll(tts: str) -> list[dict]:
+def credits_roll(tts: str, writer: str = "claude") -> list[dict]:
     voices = ("Gemini 3.8 Flash TTS (Google), voices Laomedeia and Algenib" if tts == "gemini"
               else "gpt-4o-mini-tts (OpenAI), voices marin and cedar")
     return [
         dict(heading="Produced by", lines=["Philippe Vaugouin"]),
         dict(heading="Script", lines=["Claude Opus 5.5 (Anthropic), from the novel, the film and the sources below",
-                                      "Every line checked against its source before recording"]),
+                                      "Every line checked against its source before recording"]) if writer == "claude" else
+        dict(heading="Script", lines=["GPT-6.1 Sol (OpenAI, through Codex), from the novel, the film and the sources below",
+                                      "Fact-checked line by line by Claude Opus 5.5 (Anthropic) before recording"]),
         dict(heading="Voices", lines=[voices, "The two hosts are synthetic voices"]),
         dict(heading="The novel", lines=["Red Alert, by Peter George (as Peter Bryant)",
                                          "First published in 1958 as Two Hours to Doom"]),
@@ -110,11 +112,15 @@ def _shot_of(shots: list, t: float) -> str | None:
     return None
 
 
-def build(slug: str, tts: str = "gemini") -> dict:
+def build(slug: str, tts: str = "gemini", variant: str = "") -> dict:
+    """`variant` (e.g. "gpt"): another script of the same pair, read from work/<pair>/script-<variant>/, built as
+    the episode <pair>-<variant> (its own scenario folder and voice-agent assets)."""
     p = config.pair(slug)
     sdir = config.work(slug, "script")
-    script = config.load(sdir / "script.json")
+    script = config.load((config.work(slug, f"script-{variant}") if variant else sdir) / "script.json")
     web = config.load(sdir / "web.json")
+    eid = f"{slug}-{variant}" if variant else slug
+    edir = config.work(slug, f"episode-{variant}" if variant else "episode")
     cues = {c["id"]: c for c in config.load(config.work(slug, "subs") / "en-sdh.json")["cues"]}
     movie = config.load(config.work(slug, "facts") / "movie.json")
     work = config.load(config.work(slug, "facts") / "sourcework.json")
@@ -129,12 +135,12 @@ def build(slug: str, tts: str = "gemini") -> dict:
     shots = config.load(config.work(slug, "shots") / "shots.json")["shots"]
     used_shots: set = set()   # one still per shot in the whole episode: a repeated shot becomes a hold
     shown_images: set = set()  # the first time a poster or cover appears, it pans
-    assets = VOICE_AGENT_ASSETS / slug / "images"
+    assets = VOICE_AGENT_ASSETS / eid / "images"
     assets.mkdir(parents=True, exist_ok=True)
     for f in config.work(slug, "portraits").glob("char-*.jpg"):
         shutil.copyfile(f, assets / f.name)
     # frames moved by hand after the eye check (beat id, or beat id + L/R for a split): exact frame
-    ov_file = config.work(slug, "episode") / "frame-overrides.json"
+    ov_file = edir / "frame-overrides.json"
     overrides = {k: v for k, v in (config.load(ov_file) if ov_file.exists() else {}).items() if not k.startswith("_")}
 
     def frame(spec: dict, key: str = "") -> dict:
@@ -158,8 +164,11 @@ def build(slug: str, tts: str = "gemini") -> dict:
                 problems.append(f"{beat_id}: still in an already used shot ({shot}), held instead")
                 return dict(type="hold")
             used_shots.add((shot, at))
-            return dict(type="quoted_frame" if v.get("quoted") else "frame", caption=v.get("caption", ""),
-                        shows=v.get("shows", ""), **spec)
+            out = dict(type="quoted_frame" if v.get("quoted") else "frame", caption=v.get("caption", ""),
+                       shows=v.get("shows", ""), **spec)
+            if v.get("tag"):  # lower-third name tag, "Character · Actor", on a character's first still
+                out["tag"] = v["tag"]
+            return out
         if t == "split":
             return dict(type="split_frames", caption=v.get("caption", ""),
                         left=dict(frame(v["left"], beat_id + "L"), shows=v["left"].get("shows", "")),
@@ -215,6 +224,10 @@ def build(slug: str, tts: str = "gemini") -> dict:
             if out.get("variant") == "chapter":
                 out.pop("lines", None)
             return dict(out, type=t)
+        if t == "rename":  # the novel's name struck through, the film's typed in (2026-11-03)
+            return dict(type=t, label=v.get("label", ""), novel=v["novel"], film=v["film"])
+        if t == "teletype":  # a code or a message printed letter by letter on a teleprinter strip
+            return dict(type=t, text=v["text"][:48], caption=v.get("caption", ""))
         if t in ("quote_card", "hold"):
             return dict(v, type=t)
         problems.append(f"{beat_id}: unknown visual {t}")
@@ -243,14 +256,15 @@ def build(slug: str, tts: str = "gemini") -> dict:
     if not kubrick.exists() and people.get("Stanley Kubrick", {}).get("profile_path"):
         urllib.request.urlretrieve(TMDB_ORIGINAL + people["Stanley Kubrick"]["profile_path"], kubrick)
     meta = dict(
-        id=slug, title=script.get("title") or config.load(config.work(slug, "review") / "outline.json").get("title")
+        id=eid, title=script.get("title") or config.load(config.work(slug, "review") / "outline.json").get("title")
         or "Red Alert and Dr. Strangelove", language="en", version=3,
         angle="a novel and the film that turned it into a comedy, compared by a reader and a viewer",
         voices=VOICES,
         tts=dict(provider=tts, model="gemini-3.8-flash-tts" if tts == "gemini" else "gpt-4o-mini-tts",
                  fallback="openai"),
-        register="reader / viewer (APP-IDEAS-010 §10.1): each host owns one work; script by Claude Opus 5.5 from "
-                 "source-to-screen's corpus, checked for unknown ids and copied novel text.",
+        register="reader / viewer (APP-IDEAS-010 §10.1): each host owns one work; script by "
+                 + ("GPT-6.1 Sol through Codex" if variant == "gpt" else "Claude Opus 5.5")
+                 + " from source-to-screen's corpus, checked for unknown ids and copied novel text.",
         works=[dict(movie_id=p["tmdb_movie_id"], title="Dr. Strangelove", year=1964, director="Stanley Kubrick",
                     runtime=movie.get("RUNTIME"), black_and_white=True, poster_path=movie.get("POSTER_PATH")),
                dict(movie_id=502, title="Fail Safe", year=1964, director="Sidney Lumet", runtime=112,
@@ -264,12 +278,12 @@ def build(slug: str, tts: str = "gemini") -> dict:
         persons=list(persons.values()), related=list(related.values()),
         images=dict(tmdb_base=TMDB_ORIGINAL, tmdb_profile_size="original", tmdb_wall_size="original",
                     backdrop_url=TMDB_ORIGINAL + movie["BACKDROP_PATH"], backdrop_image="images/backdrop.jpg"),
-        credits=credits_roll(tts), credits_footer=CREDITS_FOOTER,
+        credits=credits_roll(tts, "gpt" if variant == "gpt" else "claude"), credits_footer=CREDITS_FOOTER,
         credits_subtitle="Red Alert, the novel, and Dr. Strangelove, the film",
         chapters=script.get("chapters", []),
         fetched=dict(api="http://100.113.161.122:8187", endpoints=["/movies/935", "/sourceworks/10572", "/movies/502"],
                      date="2026-11-01"))
     scenario = dict(version=3, meta=meta, beats=beats)
-    out = config.work(slug, "episode") / f"{slug}.json"
+    out = edir / f"{eid}.json"
     config.save(out, scenario)
     return dict(path=str(out), beats=len(beats), persons=len(persons), posters=len(related), problems=problems)

@@ -69,7 +69,8 @@ the rest cards, posters, portraits. Types:
    frame can be checked. For a moment with no dialogue, use "time": "h:mm:ss" instead of "cue" (the opening
    refuelling, the bomb ride, the explosions) and say what is visible. `caption`: for a quoted line, the line
    itself then the speaker, plus "(Red Alert, chapter N: nearly the same words)" when the novel has it; else a
-   short descriptive caption. `quoted` true when the caption is a film line.
+   short descriptive caption. `quoted` true when the caption is a film line. Optional "tag": "Character ·
+   Actor", a lower-third name tag, only on the first still where a main character is on screen.
 - {"type": "split", "left": {"cue" or "time", "shows"}, "right": {...}, "caption": "..."}  two film frames.
 - {"type": "title_card", "works": ["novel"] or ["film"] or ["novel", "film"] or ["failsafe"], "caption": "..."}
 - {"type": "portraits", "people": [{"name": exact name from the PEOPLE list, "caption": "..."}], "caption": "..."}
@@ -79,7 +80,14 @@ the rest cards, posters, portraits. Types:
 - {"type": "card", "title": "...", "lines": ["...", "..."], "source": "..."}  a fact card, a list, a chapter
    card at the start of each segment (title = segment title), a two-column comparison ("Novel: ..." / "Film:
    ..."). Short lines, at most six.
-- {"type": "hold"}"""
+- {"type": "rename", "label": "The general", "novel": "Brigadier General Quinten", "film": "General Jack D.
+   Ripper"}  the novel's name struck through, the film's typed in: when the hosts first name a character or a
+   place the adaptation renamed; at most six per episode, only for pairs the comparison attests.
+- {"type": "teletype", "text": "WING ATTACK PLAN R", "caption": "..."}  a code or an order (at most 40
+   characters) printed letter by letter on a teleprinter strip; at most four per episode, attested in refs.
+- {"type": "hold"}
+The player animates everything with restrained motion on the film's own themes (slow push-in on stills, lines
+revealed as they are said, typed paraphrases): choose what is shown, never ask for an effect."""
 
 PART_TASK = """Write PART {k} of 5 of the episode script: segments {segments} of the revised plan.
 {previous}
@@ -169,8 +177,9 @@ def run(slug: str, parts: list[int] | None = None) -> dict:
     return done
 
 
-def merge(slug: str) -> dict:
-    d = config.work(slug, "script")
+def merge(slug: str, variant: str = "") -> dict:
+    """Join part-1..5 into script.json and check it; `variant` reads work/<pair>/script-<variant>/ instead."""
+    d = config.work(slug, f"script-{variant}" if variant else "script")
     beats, chapters, notes = [], [], []
     for k in PARTS:
         f = d / f"part-{k}.json"

@@ -48,6 +48,7 @@ def main() -> None:
     ap.add_argument("step", choices=["text", "subs", "offsets", "shots", "places", "align", "report", "all",
                                      "facts", "compare", "outline", "review", "script", "judge", "episode"])
     ap.add_argument("--tts", default="gemini", choices=["openai", "gemini"], help="voices credited and built (episode)")
+    ap.add_argument("--variant", default="", help="episode: build work/<pair>/script-<variant>/ as the episode <pair>-<variant>")
     ap.add_argument("--parts", default="1,2,3,4,5", help="script parts to write, e.g. 2,3")
     ap.add_argument("pair", help="key of data/pairs.json, e.g. strangelove")
     ap.add_argument("--track", default="en-sdh", help="subtitle track for the alignment")
@@ -97,7 +98,7 @@ def main() -> None:
         elif step == "judge":
             print(f"judge: {script.judge(p['slug'])}")
         elif step == "episode":
-            print(f"episode: {episode.build(p['slug'], args.tts)}")
+            print(f"episode: {episode.build(p['slug'], args.tts, args.variant)}")
 
 
 if __name__ == "__main__":

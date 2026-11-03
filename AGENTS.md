@@ -47,6 +47,15 @@ Align a film or series with its source work (source text against subtitles and s
 - Strangelove: corpus 205k tokens; compare 60k output tokens (2.85 $ with a cache write), outline 27k (2.30 $). With the cache read, a rerun of either pass costs about its output alone.
 - Outputs under `work/<pair>/review/`: `corpus.txt`, `compare.json`, `outline.json`, their `.check.json` (usage, unknown ids, copied runs), `stop1.md`.
 
+## On screen (every episode)
+
+- **Restrained motion that stays on the film's own themes** (Philippe, 2026-11-03, a rule for every future episode, whatever the works): entertaining but not flashy. Effects come from the world of the works (for Strangelove: the Big Board, a teleprinter strip for codes, a typewritten manuscript for the 1958 novel, a struck-through name for a renamed character), never generic ones (bounce, spin, glitch, particles, zoom punch, colour flash). One effect at a time, slow and short, under the voices. The vocabulary lives in the script visuals (`tag`, `rename`, `teletype`) and in the player (voice-agent `cinema/README.md`, look v3).
+- A new pair chooses its own themed equivalents: what in that film's world plays the role of the Big Board or the teleprinter. Propose them to Philippe before the render.
+
+## GPT experiment (2026-11-03)
+
+- Philippe asked for the same episode written by GPT-6.1 Sol through his ChatGPT subscription: `codex exec -m gpt-6.1-sol -c model_reasoning_effort="high" --sandbox workspace-write` in `work/strangelove/script-gpt/` with `BRIEF.md` (the series' rules, the version 2 constraints, the segment plan, the visual vocabulary). Codex reads the corpus itself; nothing goes through an API key. It must never read Claude's parts (independence). The same checks, a Claude fact-check subagent and the same production follow, under the slug `strangelove-gpt`.
+
 ## Dependencies on other repos
 
 - **iconic-scenes** (`~/Code/iconic-scenes`): stills for a time span of one file, `iconic-scenes still <file> <start> <end> --name <n> --out <dir>` (from 0.2.0).
