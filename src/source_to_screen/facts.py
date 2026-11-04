@@ -32,7 +32,7 @@ def _env() -> dict:
 
 def get(path: str) -> dict:
     env = _env()
-    base = env.get("TEXT2SQL_BASE_URL") or os.environ.get("S2S_API_BASE", "http://100.113.161.122:8187")
+    base = env.get("TEXT2SQL_BASE_URL") or os.environ.get("S2S_API_BASE", "http://100.113.161.122:8186")
     req = urllib.request.Request(base.rstrip("/") + path, headers={"X-API-Key": env["TEXT2SQL_API_KEY"]})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read())
