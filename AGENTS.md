@@ -13,7 +13,7 @@ Align a film or series with its source work (source text against subtitles and s
 - Public on GitHub: <https://github.com/vaugouin/source-to-screen>, code under MIT. `README.md` is the public description, in English, no em dashes.
 - The version lives in `pyproject.toml` and `src/source_to_screen/__init__.py`: bump both (then `uv lock`) in every commit.
 - **Never commit anything derived from the works**: epub text, subtitles, alignments, stills, all under `work/` (gitignored, with `*.epub`, `*.srt`, `.env`).
-- To list in the ecosystem docs when it matures, as iconic-scenes is: profile README (`~/Code/vaugouin/README.md`), the About page (`~/Code/tmdb-front/lib/about.inc.php`), `tmdb-front/AGENTS.md`, `~/Nestor/projets/t2s-backlog/topics/related-repositories.txt`.
+- To list in the ecosystem docs when it matures, as iconic-scenes is: profile README (`~/Code/vaugouin/README.md`), the About page (`~/Code/t2s-front/lib/about.inc.php`, formerly in `tmdb-front`), `tmdb-front/AGENTS.md`, `~/Nestor/projets/t2s-backlog/topics/related-repositories.txt`.
 
 ## Pairs and copies
 

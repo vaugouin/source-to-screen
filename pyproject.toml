@@ -1,6 +1,6 @@
 [project]
 name = "source-to-screen"
-version = "0.3.3"
+version = "0.3.4"
 description = "Align a film or series with its source work (novel, play, story, earlier film): source text against subtitles and shots, to ground an adaptation comparison."
 requires-python = ">=3.12"
 dependencies = [
